@@ -16,7 +16,7 @@ const {
 const { verifyToken } = require("../middleware/authMiddleware");
 const router = express.Router();
 
-router.post("/posts", verifyToken, checkAdminOrEditor, createPost);
+router.post("/posts/:categoryId", verifyToken, checkAdminOrEditor, createPost);
 
 router.get("/posts", getAllPosts);
 

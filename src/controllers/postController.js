@@ -1,15 +1,23 @@
 // controllers/postController.js
 const Post = require("../models/postModel");
+const Category = require("../models/categoryModel");
+
 
 // Add a new post
 const createPost = async (req, res) => {
+  const { categoryId } = req.params;
   const { title, content } = req.body;
 
+  const category = await Category.findById(categoryId);
+  if (!category) {
+    return res.status(404).json({ message: "Category not found" });
+  }
   try {
     const newPost = new Post({
       title,
       content,
       author: req.user._id,
+      category: categoryId,
     });
 
     await newPost.save();
@@ -22,7 +30,9 @@ const createPost = async (req, res) => {
 // Get all posts
 const getAllPosts = async (req, res) => {
   try {
-    const posts = await Post.find().populate("author", "username");
+    const posts = await Post.find()
+      .populate("author", "username")
+      .populate("category", "name");
     res.status(200).json(posts);
   } catch (error) {
     res.status(500).json({ message: "Error fetching posts" });
