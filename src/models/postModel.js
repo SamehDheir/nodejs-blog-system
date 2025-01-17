@@ -1,4 +1,3 @@
-
 const mongoose = require("mongoose");
 
 const postSchema = new mongoose.Schema({
@@ -33,8 +32,10 @@ const postSchema = new mongoose.Schema({
   },
   comments: [
     {
-      user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-      comment: { type: String },
+      content: String,
+      author: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      likes: { type: Number, default: 0 },
+      likedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
       createdAt: { type: Date, default: Date.now },
     },
   ],

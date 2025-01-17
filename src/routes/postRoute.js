@@ -12,8 +12,10 @@ const {
   deletePost,
   addComment,
   deleteComment,
-  addLike,
-  deleteLike,
+  addLikePost,
+  removeLikePost,
+  addLikeComment,
+  removeLikeComment,
 } = require("../controllers/postController");
 const { verifyToken } = require("../middleware/authMiddleware");
 const router = express.Router();
@@ -37,8 +39,22 @@ router.delete(
   deleteComment
 );
 
-router.post("/posts/:id/like", verifyToken, checkUser, addLike);
+router.post("/posts/:id/like", verifyToken, checkUser, addLikePost);
 
-router.post("/posts/:id/unlike", verifyToken, checkUser, deleteLike);
+router.post("/posts/:id/unlike", verifyToken, checkUser, removeLikePost);
+
+router.post(
+  "/posts/:postId/comments/:commentId/like",
+  verifyToken,
+  checkUser,
+  addLikeComment
+);
+
+router.post(
+  "/posts/:postId/comments/:commentId/unlike",
+  verifyToken,
+  checkUser,
+  removeLikeComment
+);
 
 module.exports = router;

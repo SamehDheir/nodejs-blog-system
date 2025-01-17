@@ -135,8 +135,8 @@ const deleteComment = async (req, res) => {
   }
 };
 
-// Add like
-const addLike = async (req, res) => {
+// Add like to post
+const addLikePost = async (req, res) => {
   const postId = req.params.id;
   const userId = req.user._id;
 
@@ -161,8 +161,8 @@ const addLike = async (req, res) => {
   }
 };
 
-// Delete like
-const deleteLike = async (req, res) => {
+// Remove like to post
+const removeLikePost = async (req, res) => {
   const postId = req.params.id;
   const userId = req.user._id;
 
@@ -187,6 +187,81 @@ const deleteLike = async (req, res) => {
   }
 };
 
+// Add like to comment
+const addLikeComment = async (req, res) => {
+  const { postId, commentId } = req.params;
+  const userId = req.user._id;
+  console.log(userId);
+
+  try {
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    const comment = post.comments.id(commentId);
+
+    if (!comment) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    // Check if the user has already liked the comment
+    if (comment.likedBy.includes(userId)) {
+      return res
+        .status(400)
+        .json({ message: "You already liked this comment" });
+    }
+
+    // Increment the like count and add the user to the likedBy list
+    comment.likes += 1;
+    comment.likedBy.push(userId);
+
+    await post.save();
+
+    res.json({ message: "Comment liked", comment });
+  } catch (error) {
+    res.status(500).json({ message: "Error liking the comment", error });
+  }
+};
+
+// Remove like to comment
+const removeLikeComment = async (req, res) => {
+  const { postId, commentId } = req.params;
+  const { userId } = req.user._id;
+
+  try {
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    const comment = post.comments.id(commentId);
+
+    if (!comment) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    // Check if the user has liked the comment
+    if (!comment.likedBy.includes(userId)) {
+      return res
+        .status(400)
+        .json({ message: "You have not liked this comment" });
+    }
+
+    // Remove the like by decrementing the like count and removing the user from the likedBy array
+    comment.likes -= 1;
+    comment.likedBy = comment.likedBy.filter((id) => id.toString() !== userId);
+
+    await post.save();
+
+    res.json({ message: "Like removed from the comment", comment });
+  } catch (error) {
+    res.status(500).json({ message: "Error unliking the comment", error });
+  }
+};
+
 module.exports = {
   createPost,
   getAllPosts,
@@ -195,6 +270,8 @@ module.exports = {
   deletePost,
   addComment,
   deleteComment,
-  addLike,
-  deleteLike,
+  addLikePost,
+  removeLikePost,
+  addLikeComment,
+  removeLikeComment,
 };
