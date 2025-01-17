@@ -2,7 +2,6 @@
 const Post = require("../models/postModel");
 const Category = require("../models/categoryModel");
 
-
 // Add a new post
 const createPost = async (req, res) => {
   const { categoryId } = req.params;
@@ -136,6 +135,58 @@ const deleteComment = async (req, res) => {
   }
 };
 
+// Add like
+const addLike = async (req, res) => {
+  const postId = req.params.id;
+  const userId = req.user._id;
+
+  try {
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    if (post.likedBy.includes(userId)) {
+      return res.status(400).json({ message: "You already liked this post" });
+    }
+
+    post.likes += 1;
+    post.likedBy.push(userId);
+    await post.save();
+
+    res.json({ message: "Post liked", post });
+  } catch (error) {
+    res.status(500).json({ message: "Error liking the post", error });
+  }
+};
+
+// Delete like
+const deleteLike = async (req, res) => {
+  const postId = req.params.id;
+  const userId = req.user._id;
+
+  try {
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    if (!post.likedBy.includes(userId)) {
+      return res.status(400).json({ message: "You have not liked this post" });
+    }
+
+    post.likes -= 1;
+    post.likedBy = post.likedBy.filter((id) => id.toString() !== userId);
+    await post.save();
+
+    res.json({ message: "Post unliked", post });
+  } catch (error) {
+    res.status(500).json({ message: "Error unliking the post", error });
+  }
+};
+
 module.exports = {
   createPost,
   getAllPosts,
@@ -144,4 +195,6 @@ module.exports = {
   deletePost,
   addComment,
   deleteComment,
+  addLike,
+  deleteLike,
 };
