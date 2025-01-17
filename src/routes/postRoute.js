@@ -16,6 +16,8 @@ const {
   removeLikePost,
   addLikeComment,
   removeLikeComment,
+  searchPostsByTag,
+  
 } = require("../controllers/postController");
 const { verifyToken } = require("../middleware/authMiddleware");
 const router = express.Router();
@@ -23,6 +25,8 @@ const router = express.Router();
 router.post("/posts/:categoryId", verifyToken, checkAdminOrEditor, createPost);
 
 router.get("/posts", getAllPosts);
+
+router.get("/posts/search", searchPostsByTag);
 
 router.get("/posts/:id", verifyToken, checkAdminOrEditor, getPostById);
 
@@ -56,5 +60,6 @@ router.post(
   checkUser,
   removeLikeComment
 );
+
 
 module.exports = router;

@@ -5,7 +5,7 @@ const Category = require("../models/categoryModel");
 // Add a new post
 const createPost = async (req, res) => {
   const { categoryId } = req.params;
-  const { title, content } = req.body;
+  const { title, content, tags } = req.body;
 
   const category = await Category.findById(categoryId);
   if (!category) {
@@ -16,6 +16,7 @@ const createPost = async (req, res) => {
       title,
       content,
       author: req.user._id,
+      tags: tags,
       category: categoryId,
     });
 
@@ -191,7 +192,6 @@ const removeLikePost = async (req, res) => {
 const addLikeComment = async (req, res) => {
   const { postId, commentId } = req.params;
   const userId = req.user._id;
-  console.log(userId);
 
   try {
     const post = await Post.findById(postId);
@@ -262,6 +262,30 @@ const removeLikeComment = async (req, res) => {
   }
 };
 
+// Search post by tags
+const searchPostsByTag = async (req, res) => {
+  const { tag } = req.query;
+
+  if (!tag) {
+    return res.status(400).json({ message: "Tag query parameter is required" });
+  }
+
+  try {
+    // Search using regular expression ignoring case
+    const posts = await Post.find({ tags: { $regex: new RegExp(tag, "i") } });
+
+    if (posts.length === 0) {
+      return res.status(404).json({ message: "No posts found with this tag" });
+    }
+
+    res.status(200).json({ posts });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error searching posts by tag", error: error.message });
+  }
+};
+
 module.exports = {
   createPost,
   getAllPosts,
@@ -274,4 +298,5 @@ module.exports = {
   removeLikePost,
   addLikeComment,
   removeLikeComment,
+  searchPostsByTag,
 };
