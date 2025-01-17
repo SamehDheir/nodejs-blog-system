@@ -18,6 +18,7 @@ const createPost = async (req, res) => {
       author: req.user._id,
       tags: tags,
       category: categoryId,
+      media: req.file ? req.file.filename : null,
     });
 
     await newPost.save();

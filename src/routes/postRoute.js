@@ -1,4 +1,5 @@
 const express = require("express");
+const upload = require("../middleware/uploadMiddleware");
 const {
   checkAdmin,
   checkAdminOrEditor,
@@ -17,12 +18,17 @@ const {
   addLikeComment,
   removeLikeComment,
   searchPostsByTag,
-  
 } = require("../controllers/postController");
 const { verifyToken } = require("../middleware/authMiddleware");
 const router = express.Router();
 
-router.post("/posts/:categoryId", verifyToken, checkAdminOrEditor, createPost);
+router.post(
+  "/posts/:categoryId",
+  verifyToken,
+  checkAdminOrEditor,
+  upload.single("file"),
+  createPost
+);
 
 router.get("/posts", getAllPosts);
 
@@ -60,6 +66,5 @@ router.post(
   checkUser,
   removeLikeComment
 );
-
 
 module.exports = router;

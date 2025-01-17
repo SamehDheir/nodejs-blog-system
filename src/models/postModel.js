@@ -20,6 +20,7 @@ const postSchema = new mongoose.Schema({
     ref: "Category",
     required: true,
   },
+  media: { type: String },
   likes: { type: Number, default: 0 },
   likedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   tags: [{ type: String }],
