@@ -1,30 +1,47 @@
-// controllers/postController.js
 const Post = require("../models/postModel");
 const Category = require("../models/categoryModel");
+const { schedulePostPublish } = require("../utils/scheduler");
 
 // Add a new post
 const createPost = async (req, res) => {
   const { categoryId } = req.params;
-  const { title, content, tags } = req.body;
+  const { title, content, tags, publishAt } = req.body;
 
-  const category = await Category.findById(categoryId);
-  if (!category) {
-    return res.status(404).json({ message: "Category not found" });
-  }
   try {
+    const category = await Category.findById(categoryId);
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
+    // Determine whether the post will be published immediately.
+    const isPublishedImmediately =
+      !publishAt || new Date(publishAt) <= new Date();
+
     const newPost = new Post({
       title,
       content,
-      author: req.user._id,
-      tags: tags,
+      author: req.user ? req.user._id : null,
+      tags: tags || [],
       category: categoryId,
       media: req.file ? req.file.filename : null,
+      published: isPublishedImmediately,
+      publishAt: publishAt || null,
     });
 
     await newPost.save();
-    res.status(201).json(newPost);
+
+    // Schedule the publication if publishAt is specified and is in the future
+    schedulePostPublish(newPost, publishAt);
+
+    res.status(201).json({
+      message: "Post created successfully",
+      post: newPost,
+    });
   } catch (error) {
-    res.status(500).json({ message: "Error creating post" });
+    console.error("Error creating post:", error);
+    res
+      .status(500)
+      .json({ message: "Error creating post", error: error.message });
   }
 };
 
