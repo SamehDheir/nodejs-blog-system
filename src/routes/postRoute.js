@@ -18,6 +18,8 @@ const {
   addLikeComment,
   removeLikeComment,
   searchPostsByTag,
+  publishPost,
+  updateDraft,
 } = require("../controllers/postController");
 const { verifyToken } = require("../middleware/authMiddleware");
 const router = express.Router();
@@ -29,18 +31,21 @@ router.post(
   upload.single("file"),
   createPost
 );
+router.put("/posts/publish/:postId", publishPost);
+
+router.put("/posts/:postId", updateDraft);
 
 router.get("/posts", getAllPosts);
 
 router.get("/posts/search", searchPostsByTag);
 
-router.get("/posts/:id", verifyToken, checkAdminOrEditor, getPostById);
+router.get("/posts/postId", verifyToken, checkAdminOrEditor, getPostById);
 
-router.put("/posts/:id", verifyToken, checkAdminOrEditor, updatePost);
+router.put("/posts/postId", verifyToken, checkAdminOrEditor, updatePost);
 
-router.delete("/posts/:id", verifyToken, checkAdmin, deletePost);
+router.delete("/posts/postId", verifyToken, checkAdmin, deletePost);
 
-router.post("/posts/:id/comments", verifyToken, checkUser, addComment);
+router.post("/posts/postId/comments", verifyToken, checkUser, addComment);
 
 router.delete(
   "/posts/:postId/comments/:commentId",
@@ -49,9 +54,9 @@ router.delete(
   deleteComment
 );
 
-router.post("/posts/:id/like", verifyToken, checkUser, addLikePost);
+router.post("/posts/postId/like", verifyToken, checkUser, addLikePost);
 
-router.post("/posts/:id/unlike", verifyToken, checkUser, removeLikePost);
+router.post("/posts/postId/unlike", verifyToken, checkUser, removeLikePost);
 
 router.post(
   "/posts/:postId/comments/:commentId/like",

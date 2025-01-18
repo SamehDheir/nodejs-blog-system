@@ -5,7 +5,7 @@ const { schedulePostPublish } = require("../utils/scheduler");
 // Add a new post
 const createPost = async (req, res) => {
   const { categoryId } = req.params;
-  const { title, content, tags, publishAt } = req.body;
+  const { title, content, tags, publishAt, status } = req.body;
 
   try {
     const category = await Category.findById(categoryId);
@@ -13,7 +13,6 @@ const createPost = async (req, res) => {
       return res.status(404).json({ message: "Category not found" });
     }
 
-    // Determine whether the post will be published immediately.
     const isPublishedImmediately =
       !publishAt || new Date(publishAt) <= new Date();
 
@@ -24,14 +23,21 @@ const createPost = async (req, res) => {
       tags: tags || [],
       category: categoryId,
       media: req.file ? req.file.filename : null,
-      published: isPublishedImmediately,
-      publishAt: publishAt || null,
+      published: status === "published" && isPublishedImmediately,
+      publishAt: status === "published" ? publishAt : null,
+      status: status || "draft",
     });
 
     await newPost.save();
 
-    // Schedule the publication if publishAt is specified and is in the future
-    schedulePostPublish(newPost, publishAt);
+    // If the article is published in the future
+    if (
+      status === "published" &&
+      publishAt &&
+      new Date(publishAt) > new Date()
+    ) {
+      schedulePostPublish(newPost, publishAt);
+    }
 
     res.status(201).json({
       message: "Post created successfully",
@@ -42,6 +48,77 @@ const createPost = async (req, res) => {
     res
       .status(500)
       .json({ message: "Error creating post", error: error.message });
+  }
+};
+
+// Update article status from draft to published
+const publishPost = async (req, res) => {
+  const { postId } = req.params;
+
+  try {
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    // Update post status to published
+    post.status = "published";
+    post.published = true;
+    await post.save();
+
+    res.status(200).json({
+      message: "Post published successfully",
+      post,
+    });
+  } catch (error) {
+    console.error("Error publishing post:", error);
+    res
+      .status(500)
+      .json({ message: "Error publishing post", error: error.message });
+  }
+};
+
+// Update draft (edit article that was saved as draft)
+const updateDraft = async (req, res) => {
+  const { postId } = req.params;
+  const { title, content, tags, media, publishAt, status } = req.body;
+
+  try {
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    if (
+      status === "published" &&
+      publishAt &&
+      new Date(publishAt) > new Date()
+    ) {
+      // Schedule the post if the post is in the future
+      post.status = "published";
+      post.publishAt = publishAt;
+      schedulePostPublish(post, publishAt);
+    } else {
+      post.status = "draft";
+      post.published = false;
+    }
+
+    // Update other field
+    post.title = title || post.title;
+    post.content = content || post.content;
+    post.tags = tags || post.tags;
+    post.media = media || req.file ? req.file.filename : null;
+    await post.save();
+
+    res.status(200).json({
+      message: "Draft updated successfully",
+      post,
+    });
+  } catch (error) {
+    console.error("Error updating draft:", error);
+    res
+      .status(500)
+      .json({ message: "Error updating draft", error: error.message });
   }
 };
 
@@ -59,10 +136,10 @@ const getAllPosts = async (req, res) => {
 
 // Get a single post by ID
 const getPostById = async (req, res) => {
-  const { id } = req.params;
+  const { postId } = req.params;
 
   try {
-    const post = await Post.findById(id).populate("author", "username");
+    const post = await Post.findById(postId).populate("author", "username");
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
     }
@@ -74,13 +151,13 @@ const getPostById = async (req, res) => {
 
 // Update an existing post
 const updatePost = async (req, res) => {
-  const { id } = req.params;
-  const { title, content } = req.body;
+  const { postId } = req.params;
+  const { title, content, tags, media, publishAt, status } = req.body;
 
   try {
     const updatedPost = await Post.findByIdAndUpdate(
-      id,
-      { title, content },
+      postId,
+      { title, content, tags, media, publishAt, status },
       { new: true, runValidators: true }
     );
 
@@ -98,10 +175,10 @@ const updatePost = async (req, res) => {
 
 // Delete a post
 const deletePost = async (req, res) => {
-  const { id } = req.params;
+  const { postId } = req.params;
 
   try {
-    const post = await Post.findByIdAndDelete(id);
+    const post = await Post.findByIdAndDelete(postId);
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
     }
@@ -113,11 +190,11 @@ const deletePost = async (req, res) => {
 
 // Add a comment to a post
 const addComment = async (req, res) => {
-  const { id } = req.params;
+  const { postId } = req.params;
   const { comment } = req.body;
 
   try {
-    const post = await Post.findById(id);
+    const post = await Post.findById(postId);
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
     }
@@ -317,4 +394,6 @@ module.exports = {
   addLikeComment,
   removeLikeComment,
   searchPostsByTag,
+  updateDraft,
+  publishPost,
 };
